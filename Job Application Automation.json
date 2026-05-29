@@ -1,0 +1,286 @@
+{
+  "name": "Job Application Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "https://docs.google.com/document/d/1GQB5zbPEDj-6DSU2TfnjjYUjUXa6H3YXslaMem41ruY/edit?usp=sharing"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        304,
+        16
+      ],
+      "id": "9af40cb0-c8d3-448f-a702-8b08ad7c8636",
+      "name": "Get a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "Fs3wHMoAFo4rXvE0",
+          "name": "Google Docs OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1b3ZxELUGEP-AtSrjeDLkZ9V1zKhQA40Tp5CV3DfX5ls/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "=902322606",
+          "mode": "id"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        32,
+        16
+      ],
+      "id": "437d26f4-956c-4489-abef-885bb142ffd7",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "e9NTxnX4RHeJlpNB",
+          "name": "Google Sheets Trigger OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a professional cover letter for a job application at \n{{ $('Google Sheets Trigger').item.json['Company Name'] }}. \nThe position is {{ $('Google Sheets Trigger').item.json['Position Title'] }}. \nHere is the job description: {{ $('Google Sheets Trigger').item.json['Job Description'] }}. \nHere are the job requirements: {{ $('Google Sheets Trigger').item.json['Job Requirements'] }}. \nThe cover letter should have 3 paragraphs: \n(1) a strong opening expressing interest, \n(2) a paragraph matching relevant skills to the requirements, \n(3) a professional closing. \nKeep the tone professional and confident.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        592,
+        16
+      ],
+      "id": "f22c7978-4632-4a75-8a37-c29fd8ad2c42",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        592,
+        208
+      ],
+      "id": "c201f7e6-c6f0-4b36-9bc8-3bef6da5e47c",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "txGECRmxxYAUNEne",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "fatimeshabanova123@gmail.com",
+        "subject": "=Application Ready: {{ $('Google Sheets Trigger').item.json['Position Title'] }} at {{ $('Google Sheets Trigger').item.json['Company Name'] }}",
+        "message": "=<h2>Your application documents are ready</h2>  <h3>📝 Cover Letter</h3> {{ $('Basic LLM Chain').item.json.text }}  <hr/>  <h3>📄 Tailored CV</h3>{{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        16
+      ],
+      "id": "88b78dee-dab4-4175-ba6b-495963eacc1c",
+      "name": "Send a message",
+      "webhookId": "d668bb0e-f026-4133-8925-deffad786b9a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Uifehftk3zGlKXaQ",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Job Analysis: {{ $('Basic LLM Chain').item.json.text }}\n\nCV Content: {{ $('Get a document').item.json.content }}\n\nCompany: {{ $('Google Sheets Trigger').item.json['Company Name'] }}\n\nPosition: {{ $('Google Sheets Trigger').item.json['Position Title'] }}\n\nGenerate a personalized cover letter and suggest 3 specific CV adjustments.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        944,
+        16
+      ],
+      "id": "247356fd-15f3-4280-bb82-440999802983",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        816,
+        224
+      ],
+      "id": "ac66d769-81b1-4216-8137-2189307aca77",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "a1Ef3l887MNpJB04",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Manipulate text and format data."
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        1104,
+        224
+      ],
+      "id": "4b65d54b-f8a6-4578-9092-f51b14d964b6",
+      "name": "Code Tool"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "session1",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        960,
+        224
+      ],
+      "id": "df9e36ae-c88a-47d9-9d3a-2e31ebf7a6f5",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a document": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "66adf9df-b743-44d6-9059-5dca8ded8652",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "79bff36099d4e25384c1dda3c7c5058d979cb27f14278e07b11aa410206df379"
+  },
+  "id": "YrFwBsABrNDXUeHA",
+  "tags": []
+}
